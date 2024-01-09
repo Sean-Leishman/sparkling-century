@@ -8,6 +8,8 @@ let renderer;
 let scene;
 let camera;
 
+let satellites = []; 
+
 
 const llarToWorld = (lat, lng, alt, rad) => {
     let f = 0 
@@ -20,7 +22,7 @@ const llarToWorld = (lat, lng, alt, rad) => {
     x /= EARTH_RADIUS;
     y /= EARTH_RADIUS;
     z /= EARTH_RADIUS;
-
+ 
     return {x, y, z};
 }
 
@@ -39,6 +41,7 @@ const initaliseScene = (data) => {
     geometry = new THREE.PlaneGeometry(0.01, 0.01);
     material = new THREE.MeshBasicMaterial({color:0xffff00, side: THREE.DoubleSide});
 
+
     let plane;
     let coord;
     for (let satellite of data.above){
@@ -46,13 +49,24 @@ const initaliseScene = (data) => {
        coord = llarToWorld(satellite.satlat, satellite.satlng, satellite.satalt, EARTH_RADIUS);
 
        plane.position.set(coord.x, coord.y, coord.z);
-       console.log(plane.position, coord)
        scene.add(plane);
+
+       satellites.push({...satellite, plane}); 
     }
+}
+
+const updateVelocity = async () => {
+    const newSatellites = await api.getSatellites();
 }
 
 const animate = () => {
   requestAnimationFrame(animate);
+
+  for (let satellite of satellites) {
+    // EKF for measurement/motion model 
+
+  }
+
   renderer.render(scene, camera);
 };
 
@@ -69,4 +83,4 @@ export const createScene = (el, data) => {
   animate();
 }
 
-window.addEventListener('resize', resize);
+// window.addEventListener('resize', resize);

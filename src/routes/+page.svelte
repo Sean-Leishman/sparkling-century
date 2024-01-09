@@ -2,11 +2,30 @@
     import { createScene } from "$lib/scene";
     import { onMount } from "svelte";
 
-    export let data: PageData;
     let el;
+    export let data;
+
+    const fetchData = async () => {
+        console.log("Update");
+
+        const response = await fetch(
+            '/api/satellite',
+            { 
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            }
+        );
+
+        const data_json = await response.json();
+        data = data_json.body.above
+    }
 
     onMount(() => {
-        createScene(el, data)
+        fetchData();
+        const updateInterval = setInterval(fetchData, 10000);
+        createScene(el, data);
+
+        return () => {clearInterval(updateInterval);};
     });
 
 </script>
@@ -15,4 +34,4 @@
 <p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
 
 <p>{data}</p>
-<canvas bind:this={el}></canvas>
+<canvas bind:this={el}></canvas> 
