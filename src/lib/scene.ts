@@ -1,8 +1,8 @@
 import * as THREE from 'three';
+import { State } from '$lib/state';
 
 const SPHERE_RADIUS = 0.5;
 const SPHERE_POSITION = {'x':0, 'y':0, 'z':0};
-const EARTH_RADIUS = 6378137;
 
 let renderer;
 let scene;
@@ -11,22 +11,8 @@ let camera;
 let satellites = []; 
 
 
-const llarToWorld = (lat, lng, alt, rad) => {
-    let f = 0 
-    let ls = Math.atan((1-f)**2 * Math.tan(lat));
 
-    let x = rad * Math.cos(ls) * Math.cos(lng) + alt * Math.cos(lat) * Math.cos(lng);
-    let y = rad * Math.cos(ls) * Math.sin(lng) + alt * Math.cos(lat) * Math.sin(lng);
-    let z = rad * Math.sin(ls) + alt * Math.sin(lat);
-
-    x /= EARTH_RADIUS;
-    y /= EARTH_RADIUS;
-    z /= EARTH_RADIUS;
- 
-    return {x, y, z};
-}
-
-const initaliseScene = (data) => {
+const initaliseScene = (sts: State) => {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 5;
@@ -44,14 +30,14 @@ const initaliseScene = (data) => {
 
     let plane;
     let coord;
-    for (let satellite of data.above){
+    for (let satellite of sts){
        plane = new THREE.Mesh( geometry, material );
-       coord = llarToWorld(satellite.satlat, satellite.satlng, satellite.satalt, EARTH_RADIUS);
 
-       plane.position.set(coord.x, coord.y, coord.z);
+       plane.position.set(satellite.x, satellite.y, satellite.z);
+       plane.name = "Satellite";
+       plane.state = satellite;
+
        scene.add(plane);
-
-       satellites.push({...satellite, plane}); 
     }
 }
 
@@ -64,6 +50,8 @@ const animate = () => {
 
   for (let satellite of satellites) {
     // EKF for measurement/motion model 
+
+
 
   }
 
