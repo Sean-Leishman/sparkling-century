@@ -23,7 +23,6 @@ export async function POST({ request }: RequestHandler) {
         );
     }
 
-    console.log(satellites.length)
     for (const satellite of satellites) {
         const id = satellite;
         data[id] = fetchData(satellite)

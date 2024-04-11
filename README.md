@@ -1,22 +1,17 @@
-# create-svelte
+# Sparking Century: SpaCe 
+A web application built using SvelteKit to visualise satellite trajectory in realtime.
+Visualisation is done using three.js and satellite data is fetched from [N2YO](https://n2yo.com/api).
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
-
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
-
+## Setup
+The setup requires a key so create a `.env` file in the root directory and add the following line:
 ```bash
-# create a new project in the current directory
-npm create svelte@latest
-
-# create a new project in my-app
-npm create svelte@latest my-app
+SWOP_API_KEY=your_key_here
 ```
+The API key can be generated after creating an account on [N2YO](https://n2yo.com/api).
 
 ## Developing
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Install dependencies with `npm install` and start the development server:
 
 ```bash
 npm run dev
@@ -26,13 +21,6 @@ npm run dev -- --open
 ```
 
 ## Building
-
-To create a production version of your app:
-
 ```bash
 npm run build
 ```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
