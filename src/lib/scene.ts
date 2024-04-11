@@ -22,7 +22,8 @@ const initaliseScene = (sts: State) => {
     controls.update();
 
     let geometry = new THREE.SphereGeometry(SPHERE_RADIUS, 32, 16);
-    let material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const texture = new THREE.TextureLoader().load('https://i.imgur.com/kFoWvzw.jpg');
+    let material = new THREE.MeshBasicMaterial({ map: texture });
     const planet = new THREE.Mesh(geometry, material);
 
     scene.add(planet);

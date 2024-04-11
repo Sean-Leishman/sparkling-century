@@ -1,4 +1,4 @@
-const EARTH_RADIUS = 1000000;
+const EARTH_RADIUS = 63710;
 
 const llarToWorld = (lat: number, lng: number, alt: number, rad: number) => {
     const f = 0
@@ -47,7 +47,7 @@ export class SatelliteState {
     }
 
     public updateVelocity(new_x: number, new_y: number, new_z: number, new_timestamp: number) {
-        const delta_t = (new_timestamp - this.timestamp) / 100;
+        const delta_t = (new_timestamp - this.timestamp);
 
         this.x2 = (new_x - this.x) / delta_t;
         this.y2 = (new_y - this.y) / delta_t;
@@ -75,8 +75,6 @@ export class State {
     }
 
     public updateState(satellites: Object) {
-        console.log("Update");
-
         const timestamp = Date.now();
 
         satellites.above.forEach(satellite => {

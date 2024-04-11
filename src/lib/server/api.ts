@@ -5,7 +5,8 @@ export const getSatellites = async () => {
     const lng = -76.014;
     const alt = 0;
     const radius = 90;
-    const category_id = 0;
+    // 0 for all, 50 for GPS, 52 for Starlink
+    const category_id = 52;
 
     try {
         const response = await fetch(`https://api.n2yo.com/rest/v1/satellite/above/${lat}/${lng}/${alt}/${radius}/${category_id}&apiKey=${SWOP_API_KEY}`, {
