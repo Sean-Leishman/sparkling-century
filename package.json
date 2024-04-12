@@ -33,7 +33,9 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@types/node": "^20.12.7",
 		"dotenv": "^16.4.5",
+		"satellite.js": "^5.0.0",
 		"three": "^0.160.0"
 	}
 }

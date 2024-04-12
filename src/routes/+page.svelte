@@ -17,13 +17,15 @@
 		data = data_json.body;
 
 		const satellite_ids = data.above.map((el) => el.satid);
+
+		/*
 		const position_response = await fetch('/api/position', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(satellite_ids)
 		});
 		const positions = await position_response.json();
-		console.log(positions);
+        */
 
 		if (init) {
 			return;

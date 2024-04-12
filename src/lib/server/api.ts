@@ -1,6 +1,7 @@
 import { SWOP_API_KEY } from "$env/static/private"
+import satellite, { type SatRec } from 'satellite.js';
 
-export const getSatellites = async () => {
+export const getInitSatellites = async () => {
     const lat = 41.702;
     const lng = -76.014;
     const alt = 0;
@@ -41,13 +42,32 @@ export const getFuturePositions = async (id: number) => {
                 'Content-Type': 'application/json',
             },
         });
+        console.log(response);
 
         const satellites = await response.json();
         return satellites
     } catch (error) {
-        console.error('Failed to fetch satellite data: ', error);
+        console.error('Failed to fetch satellite positions: ', error);
     }
 
     return {};
+}
 
+export const getSatelliteTLE = async (id: number): Promise<SatRec | null> => {
+    try {
+        const response = await fetch(`https://api.n2yo.com/rest/v1/satellite/tle/${id}&apiKey=${SWOP_API_KEY}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const satellites = await response.json();
+        const satrec = satellite.twoline2satrec(satellites.tle.line1, satellites.tle.line2);
+
+        return satrec
+    } catch (error) {
+        console.error('Failed to fetch satellite data at id %d with: %s', id, error);
+        return null;
+    }
 }
