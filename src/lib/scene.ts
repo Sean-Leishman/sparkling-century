@@ -6,11 +6,18 @@ import { State, SatelliteState } from '$lib/state';
 const SPHERE_RADIUS = 0.5;
 const SPHERE_POSITION = { 'x': 0, 'y': 0, 'z': 0 };
 
+const SATELLITE_RADIUS = 0.1;
+const EARTH_RADIUS = 6000; // 63710;
+
 let renderer: THREE.Renderer;
 let scene: THREE.Scene;
 let camera: THREE.Camera;
 let clock: THREE.Clock;
 let controls: OrbitControls
+
+const scaleToWorld = (x: number, y: number, z: number) => {
+    return { x: x / EARTH_RADIUS, y: y / EARTH_RADIUS, z: z / EARTH_RADIUS };
+}
 
 const initaliseScene = (sts: State) => {
     scene = new THREE.Scene();
@@ -29,7 +36,7 @@ const initaliseScene = (sts: State) => {
     scene.add(planet);
 
     // Add satellites
-    geometry = new THREE.PlaneGeometry(0.01, 0.01);
+    geometry = new THREE.PlaneGeometry(SATELLITE_RADIUS, SATELLITE_RADIUS);
     material = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide });
 
     const group = new THREE.Group();
@@ -38,6 +45,15 @@ const initaliseScene = (sts: State) => {
     let plane;
     for (const satellite of sts) {
         plane = new THREE.Mesh(geometry, material);
+
+        const points = []
+        for (const coord of satellite.futureStates) {
+            const updatedCoords = scaleToWorld(coord.x, coord.y, coord.z);
+            points.push(new THREE.Vector3(updatedCoords.x, updatedCoords.y, updatedCoords.z));
+        }
+        const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+        const line = new THREE.Line(lineGeometry, new THREE.LineBasicMaterial({ color: 0xff0000 }));
+        scene.add(line);
 
         plane.position.set(satellite.x, satellite.y, satellite.z);
         plane.name = "Satellite";

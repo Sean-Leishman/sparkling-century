@@ -63,7 +63,12 @@ export const getSatelliteTLE = async (id: number): Promise<SatRec | null> => {
         });
 
         const satellites = await response.json();
-        const satrec = satellite.twoline2satrec(satellites.tle.line1, satellites.tle.line2);
+        const tles = satellites.tle.split("\n");
+
+        const tle1 = tles[0];
+        const tle2 = tles[1];
+
+        const satrec = satellite.twoline2satrec(tle1, tle2);
 
         return satrec
     } catch (error) {

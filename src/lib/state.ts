@@ -1,4 +1,4 @@
-const EARTH_RADIUS = 63710;
+const EARTH_RADIUS = 6000; // 63710;
 
 const llarToWorld = (lat: number, lng: number, alt: number, rad: number) => {
     const f = 0
@@ -13,6 +13,10 @@ const llarToWorld = (lat: number, lng: number, alt: number, rad: number) => {
     z /= EARTH_RADIUS;
 
     return { x, y, z };
+}
+
+const scaleToWorld = (x: number, y: number, z: number) => {
+    return { x: x / EARTH_RADIUS, y: y / EARTH_RADIUS, z: z / EARTH_RADIUS };
 }
 
 export class SatelliteState {
@@ -30,7 +34,10 @@ export class SatelliteState {
     public timestamp: number;
     public updated: boolean;
 
-    public constructor(x: number, y: number, z: number, id: number, name: string, time: number) {
+    public stateIndex: number = 0;
+    public futureStates: { x: number, y: number, z: number, time: number }[] = [];
+
+    public constructor(x: number, y: number, z: number, id: number, name: string, time: number, futureStates: any) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -44,6 +51,17 @@ export class SatelliteState {
 
         this.timestamp = time;
         this.updated = false;
+
+        this.futureStates = futureStates;
+    }
+
+    public updatePosition(new_x: number, new_y: number, new_z: number, time: number) {
+        this.x = new_x;
+        this.y = new_y;
+        this.z = new_z;
+        this.timestamp = time;
+
+        this.updated = true;
     }
 
     public updateVelocity(new_x: number, new_y: number, new_z: number, new_timestamp: number) {
@@ -56,36 +74,49 @@ export class SatelliteState {
 
         this.updated = true;
     }
+
+    public updateState(time: number) {
+        if (this.stateIndex >= this.futureStates.length) {
+            return;
+        }
+
+        const stateIndex = this.stateIndex;
+        while (time >= this.futureStates[this.stateIndex].time) this.stateIndex++;
+
+        if (this.stateIndex === stateIndex) {
+            return;
+        }
+
+        console.log("UPDATE");
+
+        const futureState = this.futureStates[this.stateIndex];
+        const futureCoord = scaleToWorld(futureState.x, futureState.y, futureState.z);
+        this.updatePosition(futureCoord.x, futureCoord.y, futureCoord.z, futureState.time);
+    }
 }
 
 export class State {
     public satelliteStates: { [key: number]: SatelliteState };
 
     public constructor(satellites: any) {
-        const st = satellites.above;
+        // Satellites has key: satelliteId, value: satelliteData 
         this.satelliteStates = {};
 
         const timestamp = Date.now();
-        st.forEach(satellite => {
-            const coord = llarToWorld(satellite.satlat, satellite.satlng, satellite.satalt, EARTH_RADIUS);
-            const satelliteState = new SatelliteState(coord.x, coord.y, coord.z, satellite.satid, satellite.satname, timestamp);
+        Object.entries(satellites).forEach(([key, value]) => {
+            const coords = value[0];
+            const scaled_coords = scaleToWorld(coords.x, coords.y, coords.z);
+            const satelliteState = new SatelliteState(scaled_coords.x, scaled_coords.y, scaled_coords.z, coords.satid, coords.satelliteName, timestamp, value);
 
-            this.satelliteStates[satellite.satid] = satelliteState;
+            this.satelliteStates[key] = satelliteState;
         })
     }
 
-    public updateState(satellites: Object) {
+    public updateState() {
         const timestamp = Date.now();
 
-        satellites.above.forEach(satellite => {
-            const coord = llarToWorld(satellite.satlat, satellite.satlng, satellite.satalt, EARTH_RADIUS);
-
-            if (Object.hasOwn(this.satelliteStates, satellite.satid)) {
-                this.satelliteStates[satellite.satid].updateVelocity(coord.x, coord.y, coord.z, timestamp);
-            }
-            else {
-                // console.log("Satellite ", satellite.satid, " does not exist");
-            }
+        Object.entries(this.satelliteStates).forEach(([key, value]) => {
+            value.updateState(timestamp);
         });
     }
 

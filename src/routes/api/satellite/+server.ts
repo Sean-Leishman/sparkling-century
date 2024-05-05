@@ -3,7 +3,10 @@ import * as satellite from 'satellite.js';
 import * as fs from 'fs';
 
 let data = {};
-const TIMESTEP = 1000 * 1000;
+const TIMESTEP = 6000; // 6 seconds
+const END_TIME = 60000 * 60; // 1 hour
+
+type Vec4 = satellite.EcfVec3<number> & { time: number; satelliteName: string };
 
 const fetchInitData = async () => {
     try {
@@ -23,7 +26,7 @@ const fetchInitData = async () => {
 
         for (const [key, value] of Object.entries(satellites.above)) {
             const id = value.satid;
-            data[id] = fetchData(id, Date.now());
+            await fetchData(id, value.satName, Date.now());
             break;
         }
 
@@ -37,22 +40,27 @@ const fetchInitData = async () => {
     }
 }
 
-const fetchData = async (satelliteId: number, timestep: number) => {
+const fetchData = async (satelliteId: number, satelliteName: string, timestep: number) => {
     try {
         const satrec = await api.getSatelliteTLE(satelliteId);
         if (satrec === undefined) return;
 
-        const endTime = Date.now() + TIMESTEP;
+        const startTime = Date.now();
+        const endTime = startTime + END_TIME;
         const positions = [];
 
-        for (let time = Date.now(); time < endTime; time += TIMESTEP / 100) {
-            const timeSinceTLE = (Date.now() - timestep) / 1000;
+        for (let time = startTime; time < endTime; time += TIMESTEP) {
+            const timeSinceTLE = (time - startTime) / 60000; // Convert to minutes
             const positionAndVelocity = satellite.sgp4(satrec as satellite.SatRec, timeSinceTLE);
             const positionEci = positionAndVelocity.position as satellite.EciVec3<number>;
-            const gmst = satellite.gstime(Date.now());
-            const positionEcf = satellite.eciToEcf(positionEci, gmst);
+            const gmst = satellite.gstime(startTime);
+            const positionEcf = satellite.eciToEcf(positionEci, gmst) as Vec4;
+
+            positionEcf.time = time;
+            positionEcf.satelliteName = satrec.satelliteName;
             positions.push(positionEcf);
         }
+
         data[satelliteId] = positions;
 
     } catch (error) {
@@ -60,15 +68,17 @@ const fetchData = async (satelliteId: number, timestep: number) => {
     }
 }
 
-if (Object.keys(data).length === 0) {
-    fetchInitData();
-}
-setInterval(fetchInitData, TIMESTEP);
+setInterval(fetchInitData, END_TIME);
 
 export async function GET(request: Request) {
+    if (Object.keys(data).length === 0) {
+        await fetchInitData();
+    }
+
     return Response.json(
         {
             'body': data
         }
     );
 }
+

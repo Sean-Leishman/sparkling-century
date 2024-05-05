@@ -5,7 +5,7 @@
 
 	let el;
 	let state: State;
-	export let data;
+	let data;
 
 	const fetchData = async (init = false) => {
 		const response = await fetch('/api/satellite', {
@@ -16,33 +16,30 @@
 		const data_json = await response.json();
 		data = data_json.body;
 
-		const satellite_ids = data.above.map((el) => el.satid);
-
-		/*
-		const position_response = await fetch('/api/position', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(satellite_ids)
-		});
-		const positions = await position_response.json();
-        */
-
-		if (init) {
-			return;
-		}
-
-		state.updateState(data);
+		if (init) state = new State(data);
+		// state.updateState(data);
 	};
 
 	onMount(() => {
-		fetchData(true);
-		state = new State(data);
+        let updateStateInterval: NodeJS.Timeout;
 
-		const updateInterval = setInterval(fetchData, 10000);
-		createScene(el, state);
+		const mountFetch = async () => {
+			await fetchData(true);
+
+            updateStateInterval = setInterval(() => {
+                state.updateState();
+            }, 1000);
+
+			createScene(el, state);
+		};
+
+		mountFetch();
+
+		const updateInterval = setInterval(fetchData, 60000 * 60);
 
 		return () => {
 			clearInterval(updateInterval);
+			clearInterval(updateStateInterval);
 		};
 	});
 </script>
