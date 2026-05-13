@@ -1,93 +1,133 @@
-const EARTH_RADIUS = 6378137;
+import {
+	twoline2satrec,
+	propagate,
+	gstime,
+	eciToGeodetic,
+	SatRecError,
+	type SatRec,
+	type EciVec3
+} from 'satellite.js';
 
-const llarToWorld = (lat, lng, alt, rad) => {
-    let f = 0 
-    let ls = Math.atan((1-f)**2 * Math.tan(lat));
+export const EARTH_RADIUS_KM = 6378.137;
+export const EARTH_RADIUS_M = EARTH_RADIUS_KM * 1000;
 
-    let x = rad * Math.cos(ls) * Math.cos(lng) + alt * Math.cos(lat) * Math.cos(lng);
-    let y = rad * Math.cos(ls) * Math.sin(lng) + alt * Math.cos(lat) * Math.sin(lng);
-    let z = rad * Math.sin(ls) + alt * Math.sin(lat);
-
-    x /= EARTH_RADIUS;
-    y /= EARTH_RADIUS;
-    z /= EARTH_RADIUS;
- 
-    return {x, y, z};
+export interface TLE {
+	name: string;
+	line1: string;
+	line2: string;
 }
 
 export class SatelliteState {
-    public x: float;
-    public y: float;
-    public z: float;
+	public x = 0;
+	public y = 0;
+	public z = 0;
 
-    public x2: float;
-    public y2: float;
-    public z2: float; 
+	public x2 = 0;
+	public y2 = 0;
+	public z2 = 0;
 
-    public id: int;
-    public name: string;
+	public id: number;
+	public name: string;
 
-    public timestamp: int;
+	public lat = 0;
+	public lng = 0;
+	public altKm = 0;
 
-    public constructor(x: float, y: float, z:float, id:int, name:string, time: int){
-        this.x = x;
-        this.y = y;
-        this.z = z;
+	public timestamp = 0;
 
-        this.id = id;
-        this.name = name;
+	private satrec: SatRec;
 
-        this.x2 = 0;
-        this.y2 = 0;
-        this.z2 = 0;
+	public constructor(tle: TLE) {
+		this.satrec = twoline2satrec(tle.line1, tle.line2);
+		this.id = Number(this.satrec.satnum) || 0;
+		this.name = tle.name.trim();
+	}
 
-        this.timestamp = time
-    }
+	public propagate(now: Date): boolean {
+		const result = propagate(this.satrec, now);
 
-    public updateVelocity(new_x: float, new_y: float, new_z: float, new_timestamp: int) {
-        let delta_t = (new_timestamp - this.timestamp) / 1000;
+		if (this.satrec.error !== SatRecError.None) {
+			return false;
+		}
 
-        this.x2 = (new_x - this.x) / delta_t;
-        this.y2 = (new_y - this.y) / delta_t;
-        this.z2 = (new_z - this.z) / delta_t;
-    }
+		const gmst = gstime(now);
+
+		const px = result.position.x / EARTH_RADIUS_KM;
+		const py = result.position.y / EARTH_RADIUS_KM;
+		const pz = result.position.z / EARTH_RADIUS_KM;
+
+		// velocity: km/s → normalized units/s
+		const vx = result.velocity.x / EARTH_RADIUS_KM;
+		const vy = result.velocity.y / EARTH_RADIUS_KM;
+		const vz = result.velocity.z / EARTH_RADIUS_KM;
+
+		const geo = eciToGeodetic(result.position, gmst);
+		this.lat = (geo.latitude * 180) / Math.PI;
+		this.lng = (geo.longitude * 180) / Math.PI;
+		this.altKm = geo.height;
+
+		this.x = px;
+		this.y = py;
+		this.z = pz;
+		this.x2 = vx;
+		this.y2 = vy;
+		this.z2 = vz;
+		this.timestamp = now.getTime();
+
+		return true;
+	}
+
+	public speedKmS(): number {
+		return Math.hypot(this.x2, this.y2, this.z2) * EARTH_RADIUS_KM;
+	}
+
+	public computeOrbitPoints(
+		durationMinutes = 90,
+		steps = 180
+	): Array<{ x: number; y: number; z: number }> {
+		const stepMs = (durationMinutes * 60 * 1000) / steps;
+		const origin = Date.now();
+		const pts: Array<{ x: number; y: number; z: number }> = [];
+
+		for (let i = 0; i < steps; i++) {
+			const result = propagate(this.satrec, new Date(origin + i * stepMs));
+			const pos = result.position as EciVec3<number> | false;
+			if (!pos) continue;
+			pts.push({
+				x: pos.x / EARTH_RADIUS_KM,
+				y: pos.y / EARTH_RADIUS_KM,
+				z: pos.z / EARTH_RADIUS_KM
+			});
+		}
+		return pts;
+	}
 }
 
 export class State {
-   public satelliteStates: { [key: int]: SatelliteState};
+	public satelliteStates: SatelliteState[] = [];
 
-   public constructor(satellites: Object){
-       let st = satellites.above; 
-       this.satelliteStates = {};
+	public constructor(tles: TLE[]) {
+		for (const tle of tles) {
+			try {
+				const sat = new SatelliteState(tle);
+				this.satelliteStates.push(sat);
+			} catch {
+				// skip TLEs that fail to parse
+			}
+		}
+		this.propagate(new Date());
+	}
 
-       let timestamp = Date.now();
-       st.forEach(satellite => {
-            let coord = llarToWorld(satellite.satlat, satellite.satlng, satellite.satalt, EARTH_RADIUS);
-            let satelliteState = new SatelliteState(coord.x, coord.y, coord.z, satellite.satid, satellite.satname, timestamp);
+	public propagate(now: Date) {
+		for (const sat of this.satelliteStates) {
+			sat.propagate(now);
+		}
+	}
 
-            this.satelliteStates[satellite.satid] = satelliteState;
-       })
-   }
-
-   public updateState(satellites: Object) {
-       let timestamp = Date.now();
-
-        satellites.above.forEach(satellite => {
-            let coord = llarToWorld(satellite.satlat, satellite.satlng, satellite.satalt, EARTH_RADIUS);
-
-            if (Object.hasOwn(this.satelliteStates, satellite.satid)) {
-                this.satelliteStates[satellite.satid].updateVelocity(coord.x, coord.y, coord.z, timestamp);
-            }
-            else {
-                console.log("Satellite ", satellite.satid, " does not exist");
-            }
-        });
-   }
-
-   *[Symbol.iterator]() {
-        for (const [key, value] of Object.entries(this.satelliteStates)) {
-            yield value;
-        }
-   }
-
+	*[Symbol.iterator]() {
+		for (const sat of this.satelliteStates) {
+			// skip sats that never successfully propagated
+			if (sat.timestamp !== 0) yield sat;
+		}
+	}
 }

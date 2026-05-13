@@ -32,16 +32,16 @@ start failing.
 
 From `package.json`:
 
-| Script | Command | What it does |
-| --- | --- | --- |
-| `dev` | `vite dev` | Start the SvelteKit dev server |
-| `build` | `vite build` | Production build |
-| `preview` | `vite preview` | Serve the production build locally |
-| `check` | `svelte-kit sync && svelte-check --tsconfig ./tsconfig.json` | Type-check Svelte + TS |
-| `check:watch` | same with `--watch` | Continuous type-check |
-| `test` | `vitest` | Run unit tests (only `src/index.test.ts` exists) |
-| `lint` | `prettier --check . && eslint .` | Lint pass |
-| `format` | `prettier --write .` | Apply formatting |
+| Script        | Command                                                      | What it does                                     |
+| ------------- | ------------------------------------------------------------ | ------------------------------------------------ |
+| `dev`         | `vite dev`                                                   | Start the SvelteKit dev server                   |
+| `build`       | `vite build`                                                 | Production build                                 |
+| `preview`     | `vite preview`                                               | Serve the production build locally               |
+| `check`       | `svelte-kit sync && svelte-check --tsconfig ./tsconfig.json` | Type-check Svelte + TS                           |
+| `check:watch` | same with `--watch`                                          | Continuous type-check                            |
+| `test`        | `vitest`                                                     | Run unit tests (only `src/index.test.ts` exists) |
+| `lint`        | `prettier --check . && eslint .`                             | Lint pass                                        |
+| `format`      | `prettier --write .`                                         | Apply formatting                                 |
 
 ## Running it
 

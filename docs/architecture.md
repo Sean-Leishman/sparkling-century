@@ -48,7 +48,7 @@ n2yo, and a client side that renders a 3D scene and polls for updates.
   one tiny `PlaneGeometry` mesh per satellite, positioned by `(x, y, z)`.
 - `animate()` requests frames in a loop. It iterates `satellites` but the body
   is empty - there is a placeholder comment `// EKF for measurement/motion
-  model`. The motion model is not implemented.
+model`. The motion model is not implemented.
 - `updateVelocity()` references an undefined `api` symbol; it is unused.
 - `window.addEventListener('resize', resize)` is commented out.
 

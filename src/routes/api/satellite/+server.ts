@@ -1,23 +1,20 @@
-import * as api from '$lib/server/api' 
+import * as api from '$lib/server/api';
 
-let data = {};
+let tleCache: Awaited<ReturnType<typeof api.getTLEs>> = [];
 
 const fetchData = async () => {
-    try {
-        const satellites = await api.getSatellites();
-        data = satellites;
-    } catch (error) {
-        console.error("Failed to get satellite data: ", error); 
-    }
-}
+	try {
+		tleCache = await api.getTLEs();
+	} catch (error) {
+		console.error('Failed to get TLE data: ', error);
+	}
+};
 
-setInterval(fetchData, 10000);
+setInterval(fetchData, 60 * 60 * 1000);
 
-export async function GET(request) {
-    console.log("GET", data);
-    return Response.json(
-        {
-            'body': data
-        }
-    );
+export async function GET() {
+	if (tleCache.length === 0) {
+		await fetchData();
+	}
+	return Response.json({ tles: tleCache });
 }

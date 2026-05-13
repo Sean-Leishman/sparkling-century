@@ -61,7 +61,7 @@ must be present in `.env` before `npm run dev`.
 - README is the unmodified `create-svelte` template; nothing project-specific.
 - `src/lib/scene.ts` references an undefined `api` inside `updateVelocity`, and
   the `animate` loop has an empty per-satellite body with a `// EKF for
-  measurement/motion model` comment - the Kalman filter / motion update is not
+measurement/motion model` comment - the Kalman filter / motion update is not
   implemented.
 - `src/lib/index.ts` exists as a placeholder (re-export stub).
 - The `.env` file is committed with what looks like a real API key; this should
